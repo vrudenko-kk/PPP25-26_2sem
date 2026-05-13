@@ -82,3 +82,16 @@ def get_quotes(asset_id: int, db: Session = Depends(get_db)):
     if not asset:
         raise HTTPException(status_code=404, detail="Asset not found")
     return asset.quotes
+
+@router.post("/assets/{asset_id}/quotes", response_model=schemas.QuoteResponse, status_code=201, tags=["Quotes"])
+def create_quote(asset_id: int, quote: schemas.QuoteCreate, db: Session = Depends(get_db)):
+    # Проверяем, существует ли актив
+    asset = db.query(models.Asset).filter(models.Asset.id == asset_id).first()
+    if not asset:
+        raise HTTPException(status_code=404, detail="Asset not found")
+    
+    new_quote = models.Quote(**quote.model_dump(), asset_id=asset_id)
+    db.add(new_quote)
+    db.commit()
+    db.refresh(new_quote)
+    return new_quote
